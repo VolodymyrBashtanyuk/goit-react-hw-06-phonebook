@@ -1,20 +1,16 @@
-import { useState, useEffect } from 'react';
 import { ContactForm } from './ContactForm/ContactForm';
 import { Filter } from './FilterContact/FilterContact';
 import { ContactList } from './ContactList/ContactList';
-import { nanoid } from 'nanoid';
 import { Title, SubTitle } from './AppStyle';
+import { useSelector, useDispatch } from 'react-redux';
+import { getContacts, getFilter } from 'redux/selector';
+import { addContactItem } from '../redux/contactsSlice';
+import { filterContacts } from 'redux/filterSlice';
 
 export const App = () => {
-  const [contacts, setContacts] = useState(() => {
-    return JSON.parse(localStorage.getItem('contacts')) ?? [];
-  });
-
-  const [filters, SetFilters] = useState('');
-
-  useEffect(() => {
-    localStorage.setItem('contacts', JSON.stringify(contacts));
-  }, [contacts]);
+  const dispatch = useDispatch();
+  const contacts = useSelector(getContacts);
+  const filter = useSelector(getFilter);
 
   const isDublicate = ({ name }) => {
     const result = contacts.find(item => item.name === name);
@@ -25,37 +21,25 @@ export const App = () => {
     if (isDublicate(data)) {
       return alert(`${data.name} is already in contacts `);
     }
-    const newContact = {
-      id: nanoid(5),
-      ...data,
-    };
-
-    return setContacts([...contacts, newContact]);
+    dispatch(addContactItem(data));
   };
 
   const filterChange = evt => {
     const { value } = evt.currentTarget;
-
-    SetFilters(value);
+    dispatch(filterContacts(value));
   };
 
-  const getFilter = () => {
-    if (!filters) {
+  const getFilters = () => {
+    if (!filter) {
       return contacts;
     }
-
-    const normalaizedFilter = filters.toLowerCase();
+    const normalaizedFilter = filter.toLowerCase();
 
     return contacts.filter(({ name }) => {
       const normalaizedName = name.toLowerCase();
       const result = normalaizedName.includes(normalaizedFilter);
       return result;
     });
-  };
-
-  const removeContact = id => {
-    const newContact = contacts.filter(item => item.id !== id);
-    return setContacts(newContact);
   };
 
   return (
@@ -65,8 +49,8 @@ export const App = () => {
       {contacts.length !== 0 && (
         <>
           <SubTitle>Contacts</SubTitle>
-          <Filter onChange={filterChange} value={filters} />
-          <ContactList items={getFilter()} onRemove={removeContact} />
+          <Filter onChange={filterChange} value={filter} />
+          <ContactList items={getFilters()} />
         </>
       )}
     </>
